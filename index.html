@@ -85,7 +85,6 @@
             cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center;
         }
         
-        /* Inventory Management Class */
         .depleted {
             opacity: 0.15;
             pointer-events: none;
@@ -243,7 +242,6 @@
         }
 
         function buildModalOptions() {
-            // Build Camera Rows (No extra text label needed)
             const camDiv = document.getElementById('camera-opts');
             camDiv.innerHTML = '';
             
@@ -267,7 +265,6 @@
                 camDiv.appendChild(row);
             });
 
-            // Build Positive Points Grid
             const posDiv = document.getElementById('pos-opts');
             posDiv.innerHTML = '';
             positivePoints.forEach(pt => {
@@ -282,7 +279,6 @@
                 posDiv.appendChild(btn);
             });
 
-            // Build Negative Points Grid (Separate Row)
             const negDiv = document.getElementById('neg-opts');
             negDiv.innerHTML = '';
             negativePoints.forEach(pt => {
@@ -297,7 +293,6 @@
                 negDiv.appendChild(btn);
             });
 
-            // Build Special Items Grid
             const specDiv = document.getElementById('spec-opts');
             specDiv.innerHTML = '';
             specials.forEach(sp => {
@@ -318,6 +313,15 @@
             let scores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
             let logs = [];
 
+            let blackHoles = [];
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 6; c++) {
+                    if (boardState[r][c] === "Black Hole") {
+                        blackHoles.push({r, c});
+                    }
+                }
+            }
+
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 6; c++) {
                     let val = boardState[r][c];
@@ -328,13 +332,10 @@
 
                         let fullRow = boardState[r];
                         let fullCol = boardState.map(row => row[c]);
-
-                        let bhInRow = fullRow.includes("Black Hole");
-                        let bhInCol = fullCol.includes("Black Hole");
                         let hyperInRow = fullRow.includes("Hyper-drive");
 
-                        let rowSum = sumSegment(getSegment(fullRow, c), bhInRow);
-                        let colSum = sumSegment(getSegment(fullCol, r), bhInCol);
+                        let rowSum = sumSegment(getSegment(fullRow, c), r, c, true, blackHoles);
+                        let colSum = sumSegment(getSegment(fullCol, r), r, c, false, blackHoles);
                         
                         if (hyperInRow) rowSum *= 2;
 
@@ -365,15 +366,28 @@
 
         function getSegment(arr, idx) {
             let seg = [];
-            for (let i = idx - 1; i >= 0; i--) { if (arr[i] === "Meteor") break; seg.push(arr[i]); }
-            for (let i = idx + 1; i < arr.length; i++) { if (arr[i] === "Meteor") break; seg.push(arr[i]); }
+            for (let i = idx - 1; i >= 0; i--) { if (arr[i] === "Meteor") break; seg.push({val: arr[i], index: i}); }
+            for (let i = idx + 1; i < arr.length; i++) { if (arr[i] === "Meteor") break; seg.push({val: arr[i], index: i}); }
             return seg;
         }
 
-        function sumSegment(seg, hasBH) {
+        function sumSegment(seg, camR, camC, isRow, blackHoles) {
             return seg.reduce((sum, item) => {
-                let num = parseInt(item);
-                if (!isNaN(num)) sum += (hasBH && num > 0) ? 0 : num;
+                let num = parseInt(item.val);
+                if (!isNaN(num)) {
+                    let hitByBlackHole = blackHoles.some(bh => {
+                        if (isRow) {
+                            return bh.r === camR;
+                        } else {
+                            return bh.c === camC;
+                        }
+                    });
+
+                    if (hitByBlackHole && num > 0) {
+                        num = 0;
+                    }
+                    sum += num;
+                }
                 return sum;
             }, 0);
         }
