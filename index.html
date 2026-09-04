@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cosmolancer Auto-Scorer</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0f172a; color: #f8fafc;
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            touch-action: manipulation;
+        }
+        h2 { margin-top: 5px; margin-bottom: 15px; font-size: 22px; }
+        
+        /* Grid Styles */
+        .grid {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+            background-color: #1e293b; padding: 6px; border-radius: 8px;
+            width: 100%; max-width: 500px; box-sizing: border-box;
+        }
+        .cell {
+            aspect-ratio: 1; background-color: #334155; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: clamp(16px, 4vw, 20px); text-align: center; cursor: pointer;
+            user-select: none; color: white;
+            box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2);
+        }
+        .cell:active { box-shadow: inset 0 2px 0 rgba(0,0,0,0.2); background-color: #475569; }
+        .cell.empty { color: #64748b; font-weight: normal; font-size: 14px; background-color: #1e293b; border: 1px dashed #475569; box-shadow: none;}
+
+        /* Colors for Cells & Buttons */
+        .bg-Blue { background-color: #3b82f6; color: white; border: 1px solid #2563eb; }
+        .bg-Green { background-color: #22c55e; color: white; border: 1px solid #16a34a; }
+        .bg-White { background-color: #f8fafc; color: black; border: 1px solid #cbd5e1; }
+        .bg-Yellow { background-color: #eab308; color: black; border: 1px solid #ca8a04; }
+        .bg-Pos { background-color: #475569; color: white; border: 1px solid #64748b;}
+        .bg-Neg { background-color: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b;}
+        
+        /* Special Item Backgrounds */
+        .bg-Meteor { background-color: #991b1b; color: white; border: 1px solid #ef4444; }
+        .bg-BlackHole { background-color: #000000; color: white; border: 1px solid #334155; }
+        .bg-Hyperdrive { background-color: #0891b2; color: white; border: 1px solid #06b6d4; }
+        
+        /* Text Colors for Results */
+        .txt-Blue { color: #60a5fa; } .txt-Green { color: #4ade80; }
+        .txt-White { color: #f8fafc; } .txt-Yellow { color: #fde047; }
+
+        /* SVG Icon Sizing */
+        .icon { width: 60%; height: 60%; display: block; margin: 0 auto; }
+
+        /* Buttons & Modal */
+        .btn-calc {
+            background-color: #3b82f6; color: white; border: none;
+            padding: 15px 20px; font-size: 18px; border-radius: 8px;
+            cursor: pointer; font-weight: bold; width: 100%; max-width: 500px;
+            margin-top: 15px; box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .btn-calc:active { transform: translateY(2px); box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        
+        #modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 10; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background-color: #0f172a; padding: 20px; border-radius: 12px;
+            width: 95%; max-width: 440px; max-height: 90vh; overflow-y: auto; border: 1px solid #334155;
+            box-sizing: border-box;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .close-btn { background: none; border: none; color: #f8fafc; font-size: 32px; cursor: pointer; padding: 0 10px; line-height: 1;}
+        
+        /* Layout rows for cameras */
+        .camera-row { display: flex; gap: 6px; margin-bottom: 6px; }
+        .camera-btn { flex: 1; height: 42px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; text-align: center; }
+
+        /* Standard Grids */
+        .tile-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 15px; }
+        .tile-grid-wide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px; }
+        
+        .tile-btn {
+            aspect-ratio: 1; border: none; border-radius: 6px; font-weight: bold; font-size: 16px;
+            cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center;
+        }
+        
+        /* Inventory Management Class */
+        .depleted {
+            opacity: 0.15;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        /* Results */
+        #results {
+            margin-top: 15px; width: 100%; max-width: 500px;
+            background-color: #1e293b; padding: 15px; border-radius: 8px; box-sizing: border-box;
+        }
+        .score-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>Cosmolancer Scorer</h2>
+
+    <div class="grid" id="board"></div>
+    <button class="btn-calc" onclick="calculateScore()">Calculate Scores</button>
+
+    <div id="results">
+        <h3 style="margin-top: 0; border-bottom: 1px solid #475569; padding-bottom: 10px;">Results</h3>
+        <div id="score-output">Tap grid squares to place tiles.</div>
+    </div>
+
+    <!-- Selection Modal -->
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin: 0;" id="modal-title">Select Tile</h3>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            
+            <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Cameras</h4>
+            <div id="camera-opts" style="margin-bottom: 15px;"></div>
+            
+            <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Positive Points</h4>
+            <div class="tile-grid" id="pos-opts"></div>
+
+            <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Negative Points</h4>
+            <div class="tile-grid" id="neg-opts"></div>
+            
+            <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Special</h4>
+            <div class="tile-grid-wide" id="spec-opts"></div>
+            
+            <button class="btn-calc" style="background-color: #334155; margin-top: 5px; box-shadow: none;" onclick="setTile('Empty')">Remove Tile (Clear)</button>
+        </div>
+    </div>
+
+    <script>
+        const boardState = Array.from({length: 5}, () => Array(6).fill("Empty"));
+        let currentRow = 0, currentCol = 0;
+
+        const maxInventory = {
+            "+6": 4, "+5": 4, "+4": 4, "+3": 4, "+2": 4, "+1": 4,
+            "-1": 4, "-2": 4, "-3": 4, "-4": 4, "-5": 4, "-6": 4,
+            "Meteor": 2, "Black Hole": 1, "Hyper-drive": 1
+        };
+        
+        const positivePoints = ["+1","+2","+3","+4","+5","+6"];
+        const negativePoints = ["-1","-2","-3","-4","-5","-6"];
+        const players = ["Blue", "Green", "White", "Yellow"];
+        
+        players.forEach(c => {
+            maxInventory[`${c} 1`] = 4;
+            maxInventory[`${c} 2`] = 3;
+            maxInventory[`${c} 3`] = 2;
+            maxInventory[`${c} 4`] = 1;
+        });
+        
+        const specials = ["Meteor", "Black Hole", "Hyper-drive"];
+
+        const svgs = {
+            "Meteor": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19" stroke-linecap="round"/><line x1="22" y1="10" x2="10" y2="22" stroke-linecap="round"/><line x1="14" y1="2" x2="2" y2="14" stroke-linecap="round"/></svg>`,
+            "Black Hole": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/></svg>`,
+            "Hyper-drive": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9 12 2"/></svg>`
+        };
+
+        function init() {
+            renderBoard();
+            document.getElementById('modal-overlay').addEventListener('click', (e) => {
+                if (e.target.id === 'modal-overlay') closeModal();
+            });
+        }
+
+        function getPlacedCount(tileName) {
+            let count = 0;
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 6; c++) {
+                    if (boardState[r][c] === tileName) count++;
+                }
+            }
+            return count;
+        }
+
+        function renderBoard() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 6; c++) {
+                    let cell = document.createElement('div');
+                    let val = boardState[r][c];
+                    
+                    cell.className = 'cell';
+                    if (val === "Empty") {
+                        cell.classList.add('empty');
+                        cell.innerHTML = "+";
+                    } else {
+                        cell.innerHTML = formatLabel(val);
+                        applyColorClass(cell, val);
+                    }
+                    
+                    cell.onclick = () => openModal(r, c);
+                    boardDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function formatLabel(val) {
+            if (val.includes("Blue") || val.includes("Green") || val.includes("White") || val.includes("Yellow")) {
+                return val.split(" ")[1]; 
+            }
+            if (svgs[val]) return svgs[val];
+            return val;
+        }
+
+        function applyColorClass(el, val) {
+            if (val.includes("Blue")) el.classList.add("bg-Blue");
+            else if (val.includes("Green")) el.classList.add("bg-Green");
+            else if (val.includes("White")) el.classList.add("bg-White");
+            else if (val.includes("Yellow")) el.classList.add("bg-Yellow");
+            else if (val === "Meteor") el.classList.add("bg-Meteor");
+            else if (val === "Black Hole") el.classList.add("bg-BlackHole");
+            else if (val === "Hyper-drive") el.classList.add("bg-Hyperdrive");
+            else if (val.includes("-")) el.classList.add("bg-Neg");
+            else el.classList.add("bg-Pos");
+        }
+
+        function openModal(r, c) {
+            currentRow = r; currentCol = c;
+            document.getElementById('modal-title').innerText = `Cell (${r+1}, ${c+1})`;
+            buildModalOptions();
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+
+        function setTile(value) {
+            boardState[currentRow][currentCol] = value;
+            renderBoard();
+            closeModal();
+        }
+
+        function buildModalOptions() {
+            // Build Camera Rows (No extra text label needed)
+            const camDiv = document.getElementById('camera-opts');
+            camDiv.innerHTML = '';
+            
+            players.forEach(color => {
+                let row = document.createElement('div');
+                row.className = 'camera-row';
+                
+                for (let i = 1; i <= 4; i++) {
+                    let camName = `${color} ${i}`;
+                    let btn = document.createElement('button');
+                    btn.className = `camera-btn bg-${color}`;
+                    btn.innerText = i;
+                    
+                    if (getPlacedCount(camName) >= maxInventory[camName]) {
+                        btn.classList.add('depleted');
+                    } else {
+                        btn.onclick = () => setTile(camName);
+                    }
+                    row.appendChild(btn);
+                }
+                camDiv.appendChild(row);
+            });
+
+            // Build Positive Points Grid
+            const posDiv = document.getElementById('pos-opts');
+            posDiv.innerHTML = '';
+            positivePoints.forEach(pt => {
+                let btn = document.createElement('button');
+                btn.className = 'tile-btn bg-Pos';
+                btn.innerText = pt;
+                if (getPlacedCount(pt) >= maxInventory[pt]) {
+                    btn.classList.add('depleted');
+                } else {
+                    btn.onclick = () => setTile(pt);
+                }
+                posDiv.appendChild(btn);
+            });
+
+            // Build Negative Points Grid (Separate Row)
+            const negDiv = document.getElementById('neg-opts');
+            negDiv.innerHTML = '';
+            negativePoints.forEach(pt => {
+                let btn = document.createElement('button');
+                btn.className = 'tile-btn bg-Neg';
+                btn.innerText = pt;
+                if (getPlacedCount(pt) >= maxInventory[pt]) {
+                    btn.classList.add('depleted');
+                } else {
+                    btn.onclick = () => setTile(pt);
+                }
+                negDiv.appendChild(btn);
+            });
+
+            // Build Special Items Grid
+            const specDiv = document.getElementById('spec-opts');
+            specDiv.innerHTML = '';
+            specials.forEach(sp => {
+                let btn = document.createElement('button');
+                let safeClass = sp.replace(/\s+/g, '').replace('-', '');
+                btn.className = `tile-btn bg-${safeClass}`;
+                btn.innerHTML = formatLabel(sp);
+                if (getPlacedCount(sp) >= maxInventory[sp]) {
+                    btn.classList.add('depleted');
+                } else {
+                    btn.onclick = () => setTile(sp);
+                }
+                specDiv.appendChild(btn);
+            });
+        }
+
+        function calculateScore() {
+            let scores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
+            let logs = [];
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 6; c++) {
+                    let val = boardState[r][c];
+                    if (val.includes("Blue") || val.includes("Green") || val.includes("White") || val.includes("Yellow")) {
+                        let parts = val.split(" ");
+                        let player = parts[0];
+                        let tier = parseInt(parts[1]);
+
+                        let fullRow = boardState[r];
+                        let fullCol = boardState.map(row => row[c]);
+
+                        let bhInRow = fullRow.includes("Black Hole");
+                        let bhInCol = fullCol.includes("Black Hole");
+                        let hyperInRow = fullRow.includes("Hyper-drive");
+
+                        let rowSum = sumSegment(getSegment(fullRow, c), bhInRow);
+                        let colSum = sumSegment(getSegment(fullCol, r), bhInCol);
+                        
+                        if (hyperInRow) rowSum *= 2;
+
+                        let total = tier * (rowSum + colSum);
+                        scores[player] += total;
+                        
+                        let hyperLog = hyperInRow ? " (Row x2)" : "";
+                        
+                        logs.push(`
+                            <div style="font-size:15px; margin-bottom:8px; line-height: 1.4;">
+                                <span class="txt-${player}"><b>${player} Camera</b></span>: 
+                                <b>${tier}</b> × (Row ${rowSum}${hyperLog} + Col ${colSum}) = <b>${total}</b>
+                            </div>
+                        `);
+                    }
+                }
+            }
+
+            let html = logs.length > 0 ? logs.join("") : "<p style='color:#94a3b8'>No cameras placed.</p>";
+            html += `<hr style="border-color:#334155; margin: 15px 0;">`;
+            ["Blue", "White", "Green", "Yellow"].forEach(color => {
+                html += `<div class="score-row txt-${color}"><b>${color} Total:</b> <b>${scores[color]}</b></div>`;
+            });
+
+            document.getElementById('score-output').innerHTML = html;
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function getSegment(arr, idx) {
+            let seg = [];
+            for (let i = idx - 1; i >= 0; i--) { if (arr[i] === "Meteor") break; seg.push(arr[i]); }
+            for (let i = idx + 1; i < arr.length; i++) { if (arr[i] === "Meteor") break; seg.push(arr[i]); }
+            return seg;
+        }
+
+        function sumSegment(seg, hasBH) {
+            return seg.reduce((sum, item) => {
+                let num = parseInt(item);
+                if (!isNaN(num)) sum += (hasBH && num > 0) ? 0 : num;
+                return sum;
+            }, 0);
+        }
+
+        init();
+    </script>
+</body>
+</html>
