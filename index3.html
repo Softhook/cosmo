@@ -22,7 +22,6 @@
             width: 100%; max-width: 500px; box-sizing: border-box;
         }
         .cell {
-            position: relative;
             aspect-ratio: 1; background-color: #334155; border-radius: 6px;
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; font-size: clamp(16px, 4vw, 20px); text-align: center; cursor: pointer;
@@ -31,19 +30,6 @@
         }
         .cell:active { box-shadow: inset 0 2px 0 rgba(0,0,0,0.2); background-color: #475569; }
         .cell.empty { color: #64748b; font-weight: normal; font-size: 14px; background-color: #1e293b; border: 1px dashed #475569; box-shadow: none;}
-
-        /* Individual Camera Score Overlay */
-        .camera-score {
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: clamp(10px, 3vw, 13px);
-            color: #ffffff;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.9), -1px -1px 2px rgba(0,0,0,0.9);
-            z-index: 2;
-            pointer-events: none;
-        }
 
         /* Colors for Cells & Buttons */
         .bg-Blue { background-color: #3b82f6; color: white; border: 1px solid #2563eb; }
@@ -99,9 +85,11 @@
         /* Results Panel */
         #results {
             margin-top: 15px; width: 100%; max-width: 500px;
-            background-color: #1e293b; padding: 20px; border-radius: 8px; box-sizing: border-box;
+            background-color: #1e293b; padding: 15px; border-radius: 8px; box-sizing: border-box;
         }
-        .score-row-large { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 24px; font-weight: bold; }
+        .score-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 18px; }
+        .score-row-large { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 22px; font-weight: bold; }
+        .overall-box { background-color: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #334155; }
         
         #game-over-screen { display: none; text-align: center; padding: 30px 10px; }
         .trophy { font-size: 64px; margin-bottom: 10px; }
@@ -112,20 +100,19 @@
     <h2 id="app-title">Cosmolancer Scorer</h2>
     <div id="phase-label" class="phase-subtitle">Phase 1 of 3</div>
 
-    <!-- Active Game Area -->
     <div id="game-area" style="width: 100%; max-width: 500px;">
         <div class="grid" id="board"></div>
         <button id="btn-end-phase" class="btn-calc btn-success" disabled onclick="endPhase()">Fill Board to End Phase 1</button>
         
         <div id="results">
-            <h3 style="margin-top: 0; border-bottom: 1px solid #475569; padding-bottom: 10px; font-size: 20px;">Live Standings</h3>
-            <div id="overall-scores">
-                <!-- Scores populate here -->
-            </div>
+            <div class="overall-box" id="overall-scores">
+                </div>
+            
+            <h3 style="margin-top: 0; border-bottom: 1px solid #475569; padding-bottom: 10px;" id="phase-results-title">Phase 1 Breakdown</h3>
+            <div id="score-output">Tap grid squares to place tiles.</div>
         </div>
     </div>
 
-    <!-- Game Over Screen -->
     <div id="game-over-screen">
         <div class="trophy">🏆</div>
         <h1 style="margin: 0 0 20px 0;">Final Standings</h1>
@@ -133,7 +120,6 @@
         <button class="btn-calc btn-success" onclick="location.reload()" style="margin-top: 30px;">Start New Game</button>
     </div>
 
-    <!-- Selection Modal -->
     <div id="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -159,6 +145,8 @@
         let currentPhase = 1;
         let overallScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
         let phaseScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
+        
+        // Tracks which players are actively in this session
         let activePlayers = { Blue: false, Green: false, White: false, Yellow: false };
 
         const maxInventory = {
@@ -228,7 +216,6 @@
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 6; c++) {
                     let cell = document.createElement('div');
-                    cell.id = `cell-${r}-${c}`;
                     let val = boardState[r][c];
                     
                     cell.className = 'cell';
@@ -326,6 +313,7 @@
 
         function calculateScore() {
             phaseScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
+            let logs = [];
             let emptyCount = 0;
             let blackHoles = [];
 
@@ -344,6 +332,7 @@
                         let player = parts[0];
                         let tier = parseInt(parts[1]);
                         
+                        // Register player as actively playing in this game
                         activePlayers[player] = true;
 
                         let fullRow = boardState[r];
@@ -358,20 +347,33 @@
                         let total = tier * (rowSum + colSum);
                         phaseScores[player] += total;
                         
-                        // Append the individual camera score to the UI cell
-                        let cellEl = document.getElementById(`cell-${r}-${c}`);
-                        if (cellEl) {
-                            let scoreBadge = document.createElement('div');
-                            scoreBadge.className = 'camera-score';
-                            scoreBadge.innerText = total;
-                            cellEl.appendChild(scoreBadge);
-                        }
+                        let hyperLog = hyperInRow ? " (Row x2)" : "";
+                        logs.push(`
+                            <div style="font-size:15px; margin-bottom:8px; line-height: 1.4;">
+                                <span class="txt-${player}"><b>${player} Camera</b></span>: 
+                                <b>${tier}</b> × (Row ${rowSum}${hyperLog} + Col ${colSum}) = <b>${total}</b>
+                            </div>
+                        `);
                     }
                 }
             }
 
+            // Get list of players who have participated at any point
             let activeArray = players.filter(p => activePlayers[p]);
-            let overallHtml = "";
+
+            // Update Phase Breakdown UI
+            let html = logs.length > 0 ? logs.join("") : "<p style='color:#94a3b8; font-style: italic;'>No cameras placed yet.</p>";
+            
+            if (activeArray.length > 0) {
+                html += `<hr style="border-color:#334155; margin: 15px 0;">`;
+                activeArray.forEach(color => {
+                    html += `<div class="score-row txt-${color}"><b>${color} Total:</b> <b>${phaseScores[color]}</b></div>`;
+                });
+            }
+            document.getElementById('score-output').innerHTML = html;
+            
+            // Generate Overall Standings UI (Only for active players)
+            let overallHtml = `<div style="color:#94a3b8; font-size:14px; margin-bottom:8px; text-transform:uppercase; font-weight:bold;">Overall Standings</div>`;
             
             if (activeArray.length > 0) {
                 let sortedPlayers = activeArray.map(p => ({
@@ -386,14 +388,15 @@
                     overallHtml += `
                         <div class="score-row-large txt-${p.color}">
                             <span>${p.color}</span> 
-                            <span>${p.currentTotal} <span style="font-size:15px; color:#94a3b8; font-weight:normal;">(${p.base} ${phaseAdd})</span></span>
+                            <span>${p.currentTotal} <span style="font-size:14px; color:#94a3b8; font-weight:normal;">(${p.base} ${phaseAdd})</span></span>
                         </div>`;
                 });
             } else {
-                overallHtml += `<div style="color:#94a3b8; font-style:italic; font-size:15px;">Awaiting player placements...</div>`;
+                overallHtml += `<div style="color:#64748b; font-size:14px; font-style:italic;">Awaiting player placements...</div>`;
             }
             document.getElementById('overall-scores').innerHTML = overallHtml;
 
+            // Handle Phase End Button State
             const endBtn = document.getElementById('btn-end-phase');
             if (emptyCount === 0) {
                 endBtn.disabled = false;
@@ -427,6 +430,7 @@
             boardState = Array.from({length: 5}, () => Array(6).fill("Empty"));
             
             document.getElementById('phase-label').innerText = `Phase ${currentPhase} of 3`;
+            document.getElementById('phase-results-title').innerText = `Phase ${currentPhase} Breakdown`;
             
             renderBoard();
             calculateScore();
@@ -440,6 +444,7 @@
             const goScreen = document.getElementById('game-over-screen');
             goScreen.style.display = 'block';
 
+            // Filter final standings to only show players who actually participated
             let activeArray = players.filter(p => activePlayers[p]);
             let sorted = activeArray.map(p => ({ color: p, score: overallScores[p] })).sort((a, b) => b.score - a.score);
             
