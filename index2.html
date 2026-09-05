@@ -12,8 +12,7 @@
             display: flex; flex-direction: column; align-items: center;
             touch-action: manipulation;
         }
-        h2 { margin-top: 5px; margin-bottom: 5px; font-size: 22px; }
-        .phase-subtitle { color: #94a3b8; font-size: 16px; margin-bottom: 15px; font-weight: bold; }
+        h2 { margin-top: 5px; margin-bottom: 15px; font-size: 22px; }
         
         /* Grid Styles */
         .grid {
@@ -38,29 +37,29 @@
         .bg-Yellow { background-color: #eab308; color: black; border: 1px solid #ca8a04; }
         .bg-Pos { background-color: #475569; color: white; border: 1px solid #64748b;}
         .bg-Neg { background-color: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b;}
+        
+        /* Special Item Backgrounds */
         .bg-Meteor { background-color: #991b1b; color: white; border: 1px solid #ef4444; }
         .bg-BlackHole { background-color: #000000; color: white; border: 1px solid #334155; }
         .bg-Hyperdrive { background-color: #0891b2; color: white; border: 1px solid #06b6d4; }
         
+        /* Text Colors for Results */
         .txt-Blue { color: #60a5fa; } .txt-Green { color: #4ade80; }
         .txt-White { color: #f8fafc; } .txt-Yellow { color: #fde047; }
 
+        /* SVG Icon Sizing */
         .icon { width: 60%; height: 60%; display: block; margin: 0 auto; }
 
-        /* Modal & Buttons */
+        /* Buttons & Modal */
         .btn-calc {
             background-color: #3b82f6; color: white; border: none;
             padding: 15px 20px; font-size: 18px; border-radius: 8px;
             cursor: pointer; font-weight: bold; width: 100%; max-width: 500px;
             margin-top: 15px; box-sizing: border-box;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .btn-calc:active { transform: translateY(2px); box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .btn-calc:disabled { background-color: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
         
-        .btn-success { background-color: #16a34a; }
-        .btn-success:hover:not(:disabled) { background-color: #15803d; }
-
         #modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); z-index: 10; justify-content: center; align-items: center;
@@ -73,81 +72,71 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .close-btn { background: none; border: none; color: #f8fafc; font-size: 32px; cursor: pointer; padding: 0 10px; line-height: 1;}
         
-        /* Layouts */
+        /* Layout rows for cameras */
         .camera-row { display: flex; gap: 6px; margin-bottom: 6px; }
         .camera-btn { flex: 1; height: 42px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; text-align: center; }
+
+        /* Standard Grids */
         .tile-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 15px; }
         .tile-grid-wide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px; }
-        .tile-btn { aspect-ratio: 1; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         
-        .depleted { opacity: 0.15; pointer-events: none; filter: grayscale(100%); }
+        .tile-btn {
+            aspect-ratio: 1; border: none; border-radius: 6px; font-weight: bold; font-size: 16px;
+            cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center;
+        }
+        
+        .depleted {
+            opacity: 0.15;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
 
-        /* Results Panel */
+        /* Results */
         #results {
             margin-top: 15px; width: 100%; max-width: 500px;
             background-color: #1e293b; padding: 15px; border-radius: 8px; box-sizing: border-box;
         }
-        .score-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 18px; }
-        .score-row-large { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 22px; font-weight: bold; }
-        .overall-box { background-color: #0f172a; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #334155; }
-        
-        #game-over-screen { display: none; text-align: center; padding: 30px 10px; }
-        .trophy { font-size: 64px; margin-bottom: 10px; }
+        .score-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 20px; }
     </style>
 </head>
 <body>
 
-    <h2 id="app-title">Cosmolancer Scorer</h2>
-    <div id="phase-label" class="phase-subtitle">Phase 1 of 3</div>
+    <h2>Cosmolancer Scorer</h2>
 
-    <div id="game-area" style="width: 100%; max-width: 500px;">
-        <div class="grid" id="board"></div>
-        <button id="btn-end-phase" class="btn-calc btn-success" disabled onclick="endPhase()">Fill Board to End Phase 1</button>
-        
-        <div id="results">
-            <div class="overall-box" id="overall-scores">
-                </div>
-            
-            <h3 style="margin-top: 0; border-bottom: 1px solid #475569; padding-bottom: 10px;" id="phase-results-title">Phase 1 Breakdown</h3>
-            <div id="score-output">Tap grid squares to place tiles.</div>
-        </div>
+    <div class="grid" id="board"></div>
+    
+    <div id="results">
+        <h3 style="margin-top: 0; border-bottom: 1px solid #475569; padding-bottom: 10px;">Results</h3>
+        <div id="score-output">Tap grid squares to place tiles.</div>
     </div>
 
-    <div id="game-over-screen">
-        <div class="trophy">🏆</div>
-        <h1 style="margin: 0 0 20px 0;">Final Standings</h1>
-        <div id="final-scores" style="background-color: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155;"></div>
-        <button class="btn-calc btn-success" onclick="location.reload()" style="margin-top: 30px;">Start New Game</button>
-    </div>
-
+    <!-- Selection Modal -->
     <div id="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 style="margin: 0;" id="modal-title">Select Tile</h3>
                 <button class="close-btn" onclick="closeModal()">×</button>
             </div>
+            
             <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Cameras</h4>
             <div id="camera-opts" style="margin-bottom: 15px;"></div>
+            
             <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Positive Points</h4>
             <div class="tile-grid" id="pos-opts"></div>
+
             <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Negative Points</h4>
             <div class="tile-grid" id="neg-opts"></div>
+            
             <h4 style="margin: 10px 0 5px 0; color: #94a3b8;">Special</h4>
             <div class="tile-grid-wide" id="spec-opts"></div>
+            
             <button class="btn-calc" style="background-color: #334155; margin-top: 5px; box-shadow: none;" onclick="setTile('Empty')">Remove Tile (Clear)</button>
         </div>
     </div>
 
     <script>
-        let boardState = Array.from({length: 5}, () => Array(6).fill("Empty"));
+        const boardState = Array.from({length: 5}, () => Array(6).fill("Empty"));
         let currentRow = 0, currentCol = 0;
-
-        let currentPhase = 1;
-        let overallScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
-        let phaseScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
-        
-        // Tracks which players are actively in this session
-        let activePlayers = { Blue: false, Green: false, White: false, Yellow: false };
 
         const maxInventory = {
             "+6": 4, "+5": 4, "+4": 4, "+3": 4, "+2": 4, "+1": 4,
@@ -168,12 +157,15 @@
         
         const specials = ["Meteor", "Black Hole", "Hyper-drive"];
 
+        // Clean, Geometric, Symmetrical Vector Designs
         const svgs = {
             "Meteor": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="10" y1="14" x2="20" y2="4"/>
                 <circle cx="8" cy="16" r="2.5" fill="currentColor" stroke="none"/>
+                
                 <line x1="16.5" y1="19.5" x2="22" y2="14"/>
                 <circle cx="15" cy="21" r="1.5" fill="currentColor" stroke="none"/>
+                
                 <line x1="4.5" y1="7.5" x2="10" y2="2"/>
                 <circle cx="3" cy="9" r="1.5" fill="currentColor" stroke="none"/>
             </svg>`,
@@ -194,7 +186,7 @@
 
         function init() {
             renderBoard();
-            calculateScore();
+            calculateScore(); // Initialize zeroed-out results immediately
             document.getElementById('modal-overlay').addEventListener('click', (e) => {
                 if (e.target.id === 'modal-overlay') closeModal();
             });
@@ -268,59 +260,87 @@
             boardState[currentRow][currentCol] = value;
             renderBoard();
             closeModal();
-            calculateScore();
+            calculateScore(); // Automatically update scores on placement
         }
 
         function buildModalOptions() {
-            const createBtn = (item, container, baseClass) => {
-                let btn = document.createElement('button');
-                btn.className = `${baseClass}`;
-                btn.innerHTML = formatLabel(item);
-                if (getPlacedCount(item) >= maxInventory[item]) {
-                    btn.classList.add('depleted');
-                } else {
-                    btn.onclick = () => setTile(item);
-                }
-                container.appendChild(btn);
-            };
-
             const camDiv = document.getElementById('camera-opts');
             camDiv.innerHTML = '';
+            
             players.forEach(color => {
                 let row = document.createElement('div');
                 row.className = 'camera-row';
+                
                 for (let i = 1; i <= 4; i++) {
-                    createBtn(`${color} ${i}`, row, `camera-btn bg-${color}`);
+                    let camName = `${color} ${i}`;
+                    let btn = document.createElement('button');
+                    btn.className = `camera-btn bg-${color}`;
+                    btn.innerText = i;
+                    
+                    if (getPlacedCount(camName) >= maxInventory[camName]) {
+                        btn.classList.add('depleted');
+                    } else {
+                        btn.onclick = () => setTile(camName);
+                    }
+                    row.appendChild(btn);
                 }
                 camDiv.appendChild(row);
             });
 
             const posDiv = document.getElementById('pos-opts');
             posDiv.innerHTML = '';
-            positivePoints.forEach(pt => createBtn(pt, posDiv, 'tile-btn bg-Pos'));
+            positivePoints.forEach(pt => {
+                let btn = document.createElement('button');
+                btn.className = 'tile-btn bg-Pos';
+                btn.innerText = pt;
+                if (getPlacedCount(pt) >= maxInventory[pt]) {
+                    btn.classList.add('depleted');
+                } else {
+                    btn.onclick = () => setTile(pt);
+                }
+                posDiv.appendChild(btn);
+            });
 
             const negDiv = document.getElementById('neg-opts');
             negDiv.innerHTML = '';
-            negativePoints.forEach(pt => createBtn(pt, negDiv, 'tile-btn bg-Neg'));
+            negativePoints.forEach(pt => {
+                let btn = document.createElement('button');
+                btn.className = 'tile-btn bg-Neg';
+                btn.innerText = pt;
+                if (getPlacedCount(pt) >= maxInventory[pt]) {
+                    btn.classList.add('depleted');
+                } else {
+                    btn.onclick = () => setTile(pt);
+                }
+                negDiv.appendChild(btn);
+            });
 
             const specDiv = document.getElementById('spec-opts');
             specDiv.innerHTML = '';
             specials.forEach(sp => {
+                let btn = document.createElement('button');
                 let safeClass = sp.replace(/\s+/g, '').replace('-', '');
-                createBtn(sp, specDiv, `tile-btn bg-${safeClass}`);
+                btn.className = `tile-btn bg-${safeClass}`;
+                btn.innerHTML = formatLabel(sp);
+                if (getPlacedCount(sp) >= maxInventory[sp]) {
+                    btn.classList.add('depleted');
+                } else {
+                    btn.onclick = () => setTile(sp);
+                }
+                specDiv.appendChild(btn);
             });
         }
 
         function calculateScore() {
-            phaseScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
+            let scores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
             let logs = [];
-            let emptyCount = 0;
-            let blackHoles = [];
 
+            let blackHoles = [];
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 6; c++) {
-                    if (boardState[r][c] === "Empty") emptyCount++;
-                    if (boardState[r][c] === "Black Hole") blackHoles.push({r, c});
+                    if (boardState[r][c] === "Black Hole") {
+                        blackHoles.push({r, c});
+                    }
                 }
             }
 
@@ -331,9 +351,6 @@
                         let parts = val.split(" ");
                         let player = parts[0];
                         let tier = parseInt(parts[1]);
-                        
-                        // Register player as actively playing in this game
-                        activePlayers[player] = true;
 
                         let fullRow = boardState[r];
                         let fullCol = boardState.map(row => row[c]);
@@ -345,9 +362,10 @@
                         if (hyperInRow) rowSum *= 2;
 
                         let total = tier * (rowSum + colSum);
-                        phaseScores[player] += total;
+                        scores[player] += total;
                         
                         let hyperLog = hyperInRow ? " (Row x2)" : "";
+                        
                         logs.push(`
                             <div style="font-size:15px; margin-bottom:8px; line-height: 1.4;">
                                 <span class="txt-${player}"><b>${player} Camera</b></span>: 
@@ -358,107 +376,13 @@
                 }
             }
 
-            // Get list of players who have participated at any point
-            let activeArray = players.filter(p => activePlayers[p]);
+            let html = logs.length > 0 ? logs.join("") : "<p style='color:#94a3b8; font-style: italic;'>No cameras placed yet. The board will score automatically.</p>";
+            html += `<hr style="border-color:#334155; margin: 15px 0;">`;
+            ["Blue", "White", "Green", "Yellow"].forEach(color => {
+                html += `<div class="score-row txt-${color}"><b>${color} Total:</b> <b>${scores[color]}</b></div>`;
+            });
 
-            // Update Phase Breakdown UI
-            let html = logs.length > 0 ? logs.join("") : "<p style='color:#94a3b8; font-style: italic;'>No cameras placed yet.</p>";
-            
-            if (activeArray.length > 0) {
-                html += `<hr style="border-color:#334155; margin: 15px 0;">`;
-                activeArray.forEach(color => {
-                    html += `<div class="score-row txt-${color}"><b>${color} Total:</b> <b>${phaseScores[color]}</b></div>`;
-                });
-            }
             document.getElementById('score-output').innerHTML = html;
-            
-            // Generate Overall Standings UI (Only for active players)
-            let overallHtml = `<div style="color:#94a3b8; font-size:14px; margin-bottom:8px; text-transform:uppercase; font-weight:bold;">Overall Standings</div>`;
-            
-            if (activeArray.length > 0) {
-                let sortedPlayers = activeArray.map(p => ({
-                    color: p, 
-                    currentTotal: overallScores[p] + phaseScores[p],
-                    base: overallScores[p],
-                    phase: phaseScores[p]
-                })).sort((a, b) => b.currentTotal - a.currentTotal);
-
-                sortedPlayers.forEach(p => {
-                    let phaseAdd = p.phase >= 0 ? `+${p.phase}` : `${p.phase}`;
-                    overallHtml += `
-                        <div class="score-row-large txt-${p.color}">
-                            <span>${p.color}</span> 
-                            <span>${p.currentTotal} <span style="font-size:14px; color:#94a3b8; font-weight:normal;">(${p.base} ${phaseAdd})</span></span>
-                        </div>`;
-                });
-            } else {
-                overallHtml += `<div style="color:#64748b; font-size:14px; font-style:italic;">Awaiting player placements...</div>`;
-            }
-            document.getElementById('overall-scores').innerHTML = overallHtml;
-
-            // Handle Phase End Button State
-            const endBtn = document.getElementById('btn-end-phase');
-            if (emptyCount === 0) {
-                endBtn.disabled = false;
-                endBtn.innerText = currentPhase === 3 ? "Complete Final Phase" : `Complete Phase ${currentPhase}`;
-            } else {
-                endBtn.disabled = true;
-                endBtn.innerText = `Fill Board to End Phase ${currentPhase}`;
-            }
-        }
-
-        function endPhase() {
-            players.forEach(p => {
-                overallScores[p] += phaseScores[p];
-            });
-
-            for (let r = 0; r < 5; r++) {
-                for (let c = 0; c < 6; c++) {
-                    let val = boardState[r][c];
-                    if (players.some(p => val.startsWith(p)) && !val.endsWith("1")) {
-                        maxInventory[val]--;
-                    }
-                }
-            }
-
-            if (currentPhase === 3) {
-                endGame();
-                return;
-            }
-
-            currentPhase++;
-            boardState = Array.from({length: 5}, () => Array(6).fill("Empty"));
-            
-            document.getElementById('phase-label').innerText = `Phase ${currentPhase} of 3`;
-            document.getElementById('phase-results-title').innerText = `Phase ${currentPhase} Breakdown`;
-            
-            renderBoard();
-            calculateScore();
-            window.scrollTo(0, 0);
-        }
-
-        function endGame() {
-            document.getElementById('game-area').style.display = 'none';
-            document.getElementById('phase-label').innerText = 'Game Over';
-            
-            const goScreen = document.getElementById('game-over-screen');
-            goScreen.style.display = 'block';
-
-            // Filter final standings to only show players who actually participated
-            let activeArray = players.filter(p => activePlayers[p]);
-            let sorted = activeArray.map(p => ({ color: p, score: overallScores[p] })).sort((a, b) => b.score - a.score);
-            
-            let finalHtml = "";
-            sorted.forEach((p, index) => {
-                let rank = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-                finalHtml += `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:26px; font-weight:bold;" class="txt-${p.color}">
-                        <span>${rank} ${p.color}</span>
-                        <span>${p.score} pts</span>
-                    </div>`;
-            });
-            
-            document.getElementById('final-scores').innerHTML = finalHtml;
         }
 
         function getSegment(arr, idx) {
@@ -473,9 +397,16 @@
                 let num = parseInt(item.val);
                 if (!isNaN(num)) {
                     let hitByBlackHole = blackHoles.some(bh => {
-                        return isRow ? bh.r === camR : bh.c === camC;
+                        if (isRow) {
+                            return bh.r === camR;
+                        } else {
+                            return bh.c === camC;
+                        }
                     });
-                    if (hitByBlackHole && num > 0) num = 0;
+
+                    if (hitByBlackHole && num > 0) {
+                        num = 0;
+                    }
                     sum += num;
                 }
                 return sum;
