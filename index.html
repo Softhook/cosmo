@@ -104,8 +104,7 @@
     <h2>Cosmolancer Scorer</h2>
 
     <div class="grid" id="board"></div>
-    <button class="btn-calc" onclick="calculateScore()">Calculate Scores</button>
-
+    
     <div id="results">
         <h3 style="margin-top: 0; border-bottom: 1px solid #475569; padding-bottom: 10px;">Results</h3>
         <div id="score-output">Tap grid squares to place tiles.</div>
@@ -158,14 +157,36 @@
         
         const specials = ["Meteor", "Black Hole", "Hyper-drive"];
 
+        // Clean, Geometric, Symmetrical Vector Designs
         const svgs = {
-            "Meteor": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19" stroke-linecap="round"/><line x1="22" y1="10" x2="10" y2="22" stroke-linecap="round"/><line x1="14" y1="2" x2="2" y2="14" stroke-linecap="round"/></svg>`,
-            "Black Hole": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/></svg>`,
-            "Hyper-drive": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9 12 2"/></svg>`
+            "Meteor": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="10" y1="14" x2="20" y2="4"/>
+                <circle cx="8" cy="16" r="2.5" fill="currentColor" stroke="none"/>
+                
+                <line x1="16.5" y1="19.5" x2="22" y2="14"/>
+                <circle cx="15" cy="21" r="1.5" fill="currentColor" stroke="none"/>
+                
+                <line x1="4.5" y1="7.5" x2="10" y2="2"/>
+                <circle cx="3" cy="9" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>`,
+            "Black Hole": `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="6" stroke-dasharray="2 4"/>
+                <circle cx="12" cy="12" r="2"/>
+            </svg>`,
+            "Hyper-drive": `<svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1 C12 5, 14 6, 18 6 C14 6, 12 7, 12 11 C12 7, 10 6, 6 6 C10 6, 12 5, 12 1 Z" />
+                <polygon points="12,10 1,16 3.5,22 5.5,22" />
+                <polygon points="12,10 7.5,22 9.5,22" />
+                <polygon points="12,10 11.2,22 12.8,22" />
+                <polygon points="12,10 14.5,22 16.5,22" />
+                <polygon points="12,10 18.5,22 20.5,22 23,16" />
+            </svg>`
         };
 
         function init() {
             renderBoard();
+            calculateScore(); // Initialize zeroed-out results immediately
             document.getElementById('modal-overlay').addEventListener('click', (e) => {
                 if (e.target.id === 'modal-overlay') closeModal();
             });
@@ -239,6 +260,7 @@
             boardState[currentRow][currentCol] = value;
             renderBoard();
             closeModal();
+            calculateScore(); // Automatically update scores on placement
         }
 
         function buildModalOptions() {
@@ -354,14 +376,13 @@
                 }
             }
 
-            let html = logs.length > 0 ? logs.join("") : "<p style='color:#94a3b8'>No cameras placed.</p>";
+            let html = logs.length > 0 ? logs.join("") : "<p style='color:#94a3b8; font-style: italic;'>No cameras placed yet. The board will score automatically.</p>";
             html += `<hr style="border-color:#334155; margin: 15px 0;">`;
             ["Blue", "White", "Green", "Yellow"].forEach(color => {
                 html += `<div class="score-row txt-${color}"><b>${color} Total:</b> <b>${scores[color]}</b></div>`;
             });
 
             document.getElementById('score-output').innerHTML = html;
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
         function getSegment(arr, idx) {
