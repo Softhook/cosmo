@@ -150,6 +150,8 @@
         let overallScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
         let phaseScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
         let activePlayers = { Blue: false, Green: false, White: false, Yellow: false };
+        // Players who had tokens on the board when a previous phase ended
+        let committedPlayers = { Blue: false, Green: false, White: false, Yellow: false };
 
         const maxInventory = {
             "+6": 2, "+5": 2, "+4": 2, "+3": 2, "+2": 2, "+1": 2,
@@ -317,6 +319,7 @@
 
         function calculateScore() {
             phaseScores = { Blue: 0, Green: 0, White: 0, Yellow: 0 };
+            activePlayers = { ...committedPlayers };
             let emptyCount = 0;
             let blackHoles = [];
 
@@ -404,6 +407,7 @@
             players.forEach(p => {
                 overallScores[p] += phaseScores[p];
             });
+            committedPlayers = { ...activePlayers };
 
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 6; c++) {
