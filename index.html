@@ -343,11 +343,13 @@
                         let fullRow = boardState[r];
                         let fullCol = boardState.map(row => row[c]);
                         let hyperInRow = fullRow.includes("Hyper-drive");
+                        let hyperInCol = fullCol.includes("Hyper-drive");
 
                         let rowSum = sumSegment(getSegment(fullRow, c), r, c, true, blackHoles);
                         let colSum = sumSegment(getSegment(fullCol, r), r, c, false, blackHoles);
                         
                         if (hyperInRow) rowSum *= 2;
+                        if (hyperInCol) colSum *= 2;
 
                         let total = tier * (rowSum + colSum);
                         phaseScores[player] += total;
