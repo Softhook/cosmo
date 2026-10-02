@@ -387,7 +387,7 @@
                     overallHtml += `
                         <div class="score-row-large txt-${p.color}">
                             <span>${p.color}</span> 
-                            <span>${p.currentTotal} <span style="font-size:15px; color:#94a3b8; font-weight:normal;">(${p.base} ${phaseAdd})</span></span>
+                            <span>${p.currentTotal}${currentPhase > 1 ? ` <span style="font-size:15px; color:#94a3b8; font-weight:normal;">(${p.base} ${phaseAdd})</span>` : ''}</span>
                         </div>`;
                 });
             } else {
